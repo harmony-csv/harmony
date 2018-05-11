@@ -1,3 +1,3 @@
-![Harmony logo](harmony-logo.png "Harmony Logo")
+<img src="harmony-logo.png" width="600" alt="Harmony">
 
-Standardized import / export format for cryptocurrency exchanges and wallets.
+Standardized import / export format for cryptocurrency transaction ledgers.
