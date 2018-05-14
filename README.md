@@ -63,3 +63,15 @@ When a cell within the header area exactly contains one of the following strings
 * **Transaction ID** - Some value that will uniquely identify this transaction to the venue.
 
 ## Example File
+
+```
+Harmony v0.1 h5
+Venue, mt-gox
+Exported, 2013-06-01 00:00:00 UTC
+
+Date & Time,             Type,     Outbound Asset, Outbound Amount, Inbound Asset, Inbound Amount, Transaction ID
+2011-03-01 00:00:00 UTC, deposit,  ,               ,                USD,           1000,           Deposit Wire 100
+2011-03-02 00:00:00 UTC, buy,      USD,            500,             BTC,           600,            123456
+2013-04-01 00:00:00 UTC, sell,     BTC,            250,             USD,           62500,          567890
+2013-05-01 00:00:00 UTC, withdraw, USD,            60000,           ,              ,               Withdraw Wire 200
+```
