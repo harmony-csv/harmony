@@ -56,7 +56,10 @@ When a cell within the header area exactly contains one of the following strings
 * **Date & Time** - Time stamp of the entry
 * **Venue** - If not specified in the header declarations, the execution location of the transaction. This value overrides the header declaration if both are present.
 * **Type** - Transaction type, enumerated. Supported types are: `buy`, `sell`, `deposit`, `withdraw`
-* **Outbound Asset** - 
-* **Outbound Amount** - 
-* **Inbound Asset** - 
-* **Inbound Amount** - 
+* **Outbound Asset** - The asset being removed from the account by this transaction.
+* **Outbound Amount** - Quantity of Outbound Asset leaving the account.
+* **Inbound Asset** - The asset being added to the account by this transaction.
+* **Inbound Amount** - Quantity of Inbound Asset being added to the account.
+* **Transaction ID** - Some value that will uniquely identify this transaction to the venue.
+
+## Example File
