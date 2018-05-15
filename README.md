@@ -78,8 +78,6 @@ When a cell within the header area exactly contains one of the following strings
   - `fee` - For use in double-entry mode
     - `fee:network` - Indicates a fee paid to the network. Example: Gas on an Ethereum transaction.
     - `fee:exchange`
-    - `fee:maker`
-    - `fee:taker`
   - `tax`
   - `income`
   - `spend`
