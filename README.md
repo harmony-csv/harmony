@@ -70,8 +70,8 @@ When a cell within the header area exactly contains one of the following strings
 - **Venue*** - If not specified in the header declarations, the execution location of the transaction. This value overrides the header declaration if both are present.
 - **Type*** - Transaction type, enumerated. A colon after the trade type indicates a sub-type. Supported types are:
   - `trade`
-    - `trade:buy` - Indicates a trade is on the buy side
-    - `trade:sell` - Indicates a trade is on the sell side
+    - `trade:buy` - Indicates a bid that was filled
+    - `trade:sell` - Indicates an ask that was filled
   - `transfer`
     - `transfer:deposit`
     - `transfer:withdraw`
