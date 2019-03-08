@@ -57,14 +57,14 @@ Version `1.2` file with column definitions on the tenth row of the document. Sin
 
 The header area of the document is every row up to and including the row of column definitions. Within this area, each data provider may include arbitrary custom data. However, some values within this area are meaningful for this specification.
 
-When a cell within the header area exactly contains one of the following strings, the cell immediately following on the same row will contain the value of the declaration.
+When a cell within the header area contains one of the following strings exactly, the cell immediately following on the same row will contain the value of the declaration.
 
 - **Venue** - The source of all rows of data. Must be declared either here in the header or on each data row.
 - **Exported** - The generation time stamp for this document.
 
 ## Basic Column Definitions
 
-* indicates a required column
+*\* indicates a required column*
 
 - **Date & Time*** - Time stamp of the entry, in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format.
 - **Venue*** - If not specified in the header declarations, the execution location of the transaction. This value overrides the header declaration if both are present.
@@ -112,43 +112,49 @@ When a cell within the header area exactly contains one of the following strings
 ## Double-Entry-Specific Column Definitions
 
 - **Account** - The name of the account. Example: wallet:BTC.
-- **Balance Amount** - The amount remaining of the Balance Asset
 - **Balance Asset** - The `BASE` asset involved in the transaction.
+- **Balance Amount** - The amount remaining of the Balance Asset
 
 ### Example Single-Entry File
 
-    HarmonyCSV v0.1 a1 h5
-    Venue, Coinbase
-    Exported, 2018-05-01 00:00:00 UTC
-    
-    Date & Time,               Type,         Amount,         Asset,         Price,         Fee Amount,         Fee Asset,     Transaction ID,
-    2018-05-01 00:00:00 UTC,   deposit,      1000,           USD,           ,              ,                   ,              Deposit Wire 100
-    2018-05-02 00:00:00 UTC,   trade:buy,    10,             BTC/USD,       91190.10,      ,                   ,              123456
-    2018-05-03 00:00:00 UTC,   trade:sell,   50,             ETH/USD,       673.61,        336.805,            USD,           567890
-    2018-05-04 00:00:00 UTC,   withdraw,     10,             BTC,           ,              0.000169453891,     BTC,           abc123
+```
+HarmonyCSV v0.1 a1 h5
+Venue, Coinbase
+Exported, 2018-05-01 00:00:00 UTC
+
+Date & Time,              Type,        Amount,  Asset,    Price,     Fee Amount,  Fee Asset,  Transaction ID,
+2018-05-01 00:00:00 UTC,  deposit,     1000,    USD,      ,          ,            ,           Deposit Wire 100
+2018-05-02 00:00:00 UTC,  trade:buy,   10,      BTC/USD,  91190.10,  ,            ,           123456
+2018-05-03 00:00:00 UTC,  trade:sell,  50,      ETH/USD,  673.61,    336.805,     USD,        567890
+2018-05-04 00:00:00 UTC,  withdraw,    10,      BTC,      ,          0.00016945,  BTC,        abc123
+```
 
 ### Example Double-Entry File
 
 *Note: This is the same set of transactions as in the single-entry example.*
 
-    HarmonyCSV v0.1 a2 h5
-    Venue, Coinbase
-    Exported, 2018-05-01 00:00:00 UTC
-    
-    Date & Time,               Type,         Amount,         Asset,         Transaction ID
-    2018-05-01 00:00:00 UTC,   deposit,      1000,           USD,           Deposit Wire 100
-    2018-05-02 00:00:00 UTC,   trade:buy,    10,             BTC,           123456
-    2018-05-02 00:00:00 UTC,   trade:buy,    -91190.10,      USD,           123456
-    2018-05-03 00:00:00 UTC,   trade:sell,   50,             ETH,           567890
-    2018-05-03 00:00:00 UTC,   trade:sell,   33680.50,       USD,           567890
-    2018-05-03 00:00:00 UTC,   fee:exchange, 336.805,        USD,           567890
-    2018-05-04 00:00:00 UTC,   withdraw,     10,             BTC,           abc123
-    2018-05-04 00:00:00 UTC,   fee:network,  0.000169453891, BTC,           abc123
+```
+HarmonyCSV v0.1 a2 h5
+Venue, Coinbase
+Exported, 2018-05-01 00:00:00 UTC
+
+Date & Time,              Type,          Amount,      Asset,  Transaction ID
+2018-05-01 00:00:00 UTC,  deposit,       1000,        USD,    Deposit Wire 100
+2018-05-02 00:00:00 UTC,  trade:buy,     10,          BTC,    123456
+2018-05-02 00:00:00 UTC,  trade:buy,     -91190.10,   USD,    123456
+2018-05-03 00:00:00 UTC,  trade:sell,    50,          ETH,    567890
+2018-05-03 00:00:00 UTC,  trade:sell,    33680.50,    USD,    567890
+2018-05-03 00:00:00 UTC,  fee:exchange,  336.805,     USD,    567890
+2018-05-04 00:00:00 UTC,  withdraw,      10,          BTC,    abc123
+2018-05-04 00:00:00 UTC,  fee:network,   0.00016945,  BTC,    abc123
+```
 
 ## What's missing
 
-- **Cost-basis reporting** - While cost-basis should be included as an optional column, should the identifier of the source funds spent be required alongside? There is an inherent issue with this however, in the event that more than one source, each with a different cost-basis, was used.
-- **Derivatives**
+- **Tax Lots, Cost-basis and Disposals** - Institutions track these items as part of profit & loss reporting
+- **Derivatives** - Futures & Options, including margin maintenance fees and leverage
 - **Lending**
 - **Borrowing**
 - **Short & Cover**
+- **Order IDs**
+- **Adjustments**
