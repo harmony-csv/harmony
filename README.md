@@ -6,155 +6,130 @@ Standardized import / export format for cryptocurrency transaction ledgers.
 
 Harmony takes the guesswork out of creating an export format for account history. This standard enhances interoperability between producers and consumers of these exports, making "CSV wrangling" a simpler task.
 
-The basic requirements of the Harmony format are:
+The CSV data format enjoys near-universal support by spreadsheet apps and programming languages alike. The text-only contents of a Harmony file are both human-readable and machine-parseable. File versioning makes writing libraries easier, as each can target a specific range of versions for support.
 
-1. The source of the data is named somewhere within the file. For a single-source export, such as an exchange, this declaration can be made within the header. For exports containing history from multiple sources, such as from portfolio management tools, each row of the data must contain the venue for that transaction.
-2. Transactions can be entered as single-entry, which makes trade history exports more readable; or double-entry, specifying the debits and credits in separate columns.
-
-## Objectives
-
-The Harmony standard should be:
-
-- Easily readable by a human
-- Adaptable to different languages
-- Versatile enough to account for most transactional use cases
-- Upgradeable
-
-## Who is this for?
+## Who benefits from Harmony?
 
 - Exchanges
-- Wallet providers
+- Wallets
 - Service providers
+- Users combining data from multiple sources
 
-# The Format, Version 0.1
+# The Format, Version 0.2
 
-A contents of a Harmony file are in CSV format as described in [RFC 4180](https://tools.ietf.org/html/rfc4180). Implementors may look for language-specific CSV libraries that conform this RFC.
+A Harmony file is UTF-8 encoded plain text consisting of a structured header area followed by normal CSV data contents. The CSV specification in [RFC 4180](https://tools.ietf.org/html/rfc4180) stipulates a single header row followed by rows containing one record each. The Harmony format deviates from this specification by creating a multi-row header area separated from the data contents by a single blank line. The header area follows the spirit of the CSV spec by using rows and columns separated by line breaks and commas, but the number of columns in the header area is not required to match the number of columns in the data payload. Implementations may safely pass the column definitions and transaction data portion to any compatible CSV parsing library.
+
+The document contents are, in order: a type declaration, some optional header declarations, one blank line, the column definitions, and the transaction data.
+
+    HarmonyCSV v0.2                       # Type declaration row
+    Provenance, Interchange               # Header declaration (optional)
+                                          # Single blank line
+    Timestamp,  Transaction ID, ...       # Column definitions
+    2010-01-01, 1,              ...       # Transaction data
+    2010-02-02, 2,              ...       # ...
 
 ## Type Declaration
 
-The first row of the document must contain one type declaration cell, which specifies the options for the file. The format of this cell is a space-separated list of options, the first being the string `HarmonyCSV`. This declaration may be safely placed as the last cell of the first row.
+The first row of the document must contain the type declaration in exactly one cell. The format of this cell is a space-separated list of options, the first being the string `HarmonyCSV`.
 
     HarmonyCSV (option)(value) (option)(value) ...
 
-The options are as follows:
+As of version 0.2, there is only one option:
 
-- **v** - The Harmony version of the document. Examples: `v0.1`, `v1`, `v1.2`
-- **h** - The 1-indexed number of the column-definition row. The data content starts on the next row. Rows before this row are in the header area. Defaults to `h3`. Examples: `h1`, `h12`
-- **a** - The accounting methodology used in the document. Valid options are either single-entry (`1`) or double-entry (`2`). Defaults to `1`. Examples: `a1`, `a2`
-- **l-** - Language of the document, following [RFC 5646](https://tools.ietf.org/html/rfc5646). Defaults to `en`. Examples: `l-en`, `l-zh-CN`
-
-### Examples
-
-Version `0.1` file with column definitions on the third row of the document by default. Single-Entry, English language assumed. This is the minimum required declaration.
-
-    HarmonyCSV v0.1
-
-Version `1.2` file with column definitions on the tenth row of the document. Single-entry accounting. Definitions in German.
-
-    HarmonyCSV v1.2 h10 a1 l-de
+- **v** - The Harmony version of the document. Examples: `v0.2`, `v1`, `v1.2`
 
 ## Header Declarations
 
-The header area of the document is every row up to and including the row of column definitions. Within this area, each data provider may include arbitrary custom data. However, some values within this area are meaningful for this specification.
+The header area of the document is all rows prior to the single blank row above the column definitions. Within this area, each institution may include arbitrary custom data. However, some values within this area are reserved for this specification. None of these header declarations are required.
 
 When a cell within the header area contains one of the following strings exactly, the cell immediately following on the same row will contain the value of the declaration.
 
-- **Venue** - The source of all rows of data. Must be declared either here in the header or on each data row.
-- **Exported** - The generation time stamp for this document.
+- **Provenance** - The institution that produced the report. This could be the originitaing exchange or another service provider.
+- **Period start** - The starting timestamp of data export range, [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format. This is the earliest possible timestamp of the data contents. The document must not contain data earlier than this timestamp. Example: for a one-year export of 2017 transaction history, this would be `2017-01-01T00:00:00Z`.
+- **Period end** - The timestamp of the latest possible data within the document, ISO 8601. The document must not contain data after this timestamp. Example: `2017-12-31T23:59:59Z`
 
-## Basic Column Definitions
+## Blank Line
 
-*\* indicates a required column*
+A single blank line separates the header and data portions of the file. This line is "blank" in the CSV sense, in that it contains no data in any cell. As such, the line may contain commas, double-quotes, and whitespace followed by CRLF, but it may not contain actual cell contents, or it will be interpreted as part of the header.
 
-- **Date & Time*** - Time stamp of the entry, in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format.
-- **Venue*** - If not specified in the header declarations, the execution location of the transaction. This value overrides the header declaration if both are present.
-- **Type*** - Transaction type, enumerated. A colon after the trade type indicates a sub-type. Supported types are:
-  - `trade`
-    - `trade:buy` - Indicates a bid that was filled
-    - `trade:sell` - Indicates an ask that was filled
-  - `transfer`
-    - `transfer:deposit`
-    - `transfer:withdraw`
-  - `fee` - For use in double-entry mode
-    - `fee:network` - Indicates a fee paid to the network. Example: Gas on an Ethereum transaction.
-    - `fee:exchange`
-  - `tax`
-  - `income`
-  - `spend`
-  - `gift`
-  - `donation`
-  - `air drop`
-  - `reward`
-    - `reward:mining`
-    - `reward:staking`
-  - `"stolen, hacked, fraud"`
-  - `lost`
-- **Asset*** - What asset is being transacted. For trades using single-entry mode, this is the trading pair in the format `BASE/QUOTE`. For non-trades, the single currency.
-- **Amount*** - How much of the `BASE` asset was transacted. Negative values should only be present in double-entry mode.
-- **Transaction ID*** - Some value that will uniquely identify this transaction to the venue.
-- **Network ID** - The on-chain transaction identifier.
-- **From ID** - An identifier indicating from where the transaction originated, possibly an on-chain address.
-- **To ID** - An identifier indicating from where the transaction was sent, possibly an on-chain address.
-- **Trade Order Type** - The type of order execution method utilized for a given transaction. Examples: `market`, `limit`, `stop`, `auction`, `block`
-- **Notes** - A general-purpose, unstructured field.
+Example of a valid "blank" line separating the header from the contents:
 
-## Single-Entry-Specific Column Definitions
+    "HarmonyCSV v0.2",""
+    "",""
+    "Transaction ID","Timestamp"
 
-- **Price*** - The execution price for trades, as the amount of the `QUOTE` asset paid for each unit of the `BASE` asset
-- **Total** - The total value of the `QUOTE` asset involved in the transaction.
-- **Fee Amount** - Quantity of the Fee Asset being spent.
-- **Fee Asset** - The asset being spent as payment for the transaction. For on-chain transactions, this may represent the network fee when the Network Fee Asset column is not defined.
-- **Network Fee Amount** - Quantity of the Network Fee Asset being spent.
-- **Network Fee Asset** - The asset being spent as payment for an on-chain transaction.
-- **Tax Asset** - The asset being used to pay taxes on the transaction.
-- **Tax Amount** - Quantity of the Tax Asset being spent.
+This example file's contents more closely align with the spirit of the CSV spec, requiring every row the have the same number of columns, hence the empty cells in the first and second rows. Each cell is surrounded by double quotes as permitted by RFC 4180. The second row is "blank" in the sense that a spreadsheet program would display empty cells.
 
-## Double-Entry-Specific Column Definitions
+## Column Definitions
 
-- **Account** - The name of the account. Example: wallet:BTC.
-- **Balance Asset** - The `BASE` asset involved in the transaction.
-- **Balance Amount** - The amount remaining of the Balance Asset
+The following column names are reserved to the Harmony CSV format. Other columns may be included by exporters while still complying with the specification. However, later versions of Harmony may conflict with external definitions.
 
-### Example Single-Entry File
+| Column              | Required | Description |
+| :------------------ | :------- | :---------- |
+| Timestamp           | Yes | Date and time of the entry, in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format |
+| Venue               | Yes | The execution location of the transaction |
+| Type                | Yes | Ledger entry type and optional sub-type. See further explanation and types [below](#entry-types). |
+| Amount              | Yes | The change in the asset balance |
+| Asset               | Yes | The asset affected by this entry |
+| Transaction&nbsp;ID | Yes | Some value that will uniquely identify this transaction to the venue, like a trade ID. All ledger entries with the same Venue, Transaction ID, and Instrument will be treated as belonging to the same transaction. Non-trade entries will not have an Instrument column value, so the Venue+Transaction ID must uniquely identify a transaction. |
+| Reference&nbsp;ID   | No  | An optional unique identifier for a transaction, specific to the exporter's system |
+| Balance             | No  | Running balance of the Asset after this entry takes effect |
+| Order&nbsp;ID       | No  | Identifier that ties together multiple transactions |
+| Account             | No  | Non-changing venue-specific account identifier, useful for denoting sub-accounts |
+| Instrument          | No  | For trades, the thing being traded, in the form `BASE/QUOTE`. Example: `BTC/USD` |
+| Network&nbsp;ID     | No  | The txid for on-chain transactions. For UTXO chains like Bitcoin, this ID may be in the `hash:index` format, which denotes the input or output index of this line item within the transaction. |
+| Address             | No  | The wallet address spending or receiving on-chain funds |
+| Note                | No  | A general-purpose, unstructured notes field |
+
+### Entry Types
+
+Each row represents a different part of a transaction. The type of each of these entries determines how they will be treated for accounting purposes. Top-level types may be further refined by declaring sub-types, separated with a colon `:`. Some sub-types are reserved here, but otherwise, there are no limitations on sub-type declarations.
+
+The format for entry types should be lowercase, hyphenated strings joined by colons, matching the Regular Expression `/^([a-z0-9]+([-_:]?[a-z0-9]+)*)$/`. An example entry type could be:
+
+    type:sub-type:detail-type
+
+The following are reserved types and sub-types:
+
+- `expense` - Non-fee general expenditure
+- `fee` - Funds paid to the institution or network for the transaction
+  - `fee:network` - Transaction fees for cryptocurrencies. Example: Gas on an Ethereum transaction.
+  - `fee:trade` - Trade fees
+  - `fee:transfer` - Fees paid to traditional institutions. Example: wire transfer fee
+- `income`
+  - `income:air-drop` - Tokens added to existing holders of another asset
+  - `income:reward` - Income earned through cryptocurreny mining activity
+- `loss` - Funds lost. Can sub-type as `loss:hack` or `loss:password` to specify in more detail.
+- `tax` - Tax payment transactions
+- `trade` - The sale or purchase of a trading instrument.
+  - `trade:buy` - Indicates a bid that was filled
+  - `trade:sell` - Indicates an ask that was filled
+- `transfer` - Movement of funds in or out of an institution or wallet
+  - `transfer:deposit`
+  - `transfer:withdrawal` - Amount column should be negative, denoting a reduction in asset balance.
+
+### Example File
+
+This example file shows the following account activity expanded into line items, with the optional Balance column showing the running total of the entry asset.
+
+- Deposits 1000 USD into Coinbase via `Wire-100` wire transfer
+- Buy 0.10 Bitcoin for 900 USD (effective price of $9000) in trade `123456`
+- Sell 0.05 Bitcoin for 1000 USD (effective price of $20,000) in trade `567890`
+- Withdraw 0.099 Bitcoin, paying 0.001 transaction fee in on-chain transaction `abc123`
 
 ```
-HarmonyCSV v0.1 a1 h5
-Venue, Coinbase
-Exported, 2018-05-01 00:00:00 UTC
+HarmonyCSV v0.2
+Provenance, Interchange, https://interchangehq.com/
+Period start, 2019-05-01 00:00:00 UTC, Period end, 2019-05-30 23:59:59 UTC
 
-Date & Time,              Type,        Amount,  Asset,    Price,     Fee Amount,  Fee Asset,  Transaction ID,
-2018-05-01 00:00:00 UTC,  deposit,     1000,    USD,      ,          ,            ,           Deposit Wire 100
-2018-05-02 00:00:00 UTC,  trade:buy,   10,      BTC/USD,  91190.10,  ,            ,           123456
-2018-05-03 00:00:00 UTC,  trade:sell,  50,      ETH/USD,  673.61,    336.805,     USD,        567890
-2018-05-04 00:00:00 UTC,  withdraw,    10,      BTC,      ,          0.00016945,  BTC,        abc123
+Timestamp,             Venue,     Type,          Amount,  Asset,  Transaction ID, Balance, Network ID
+2018-05-01T00:00:00Z,  coinbase,  deposit,       1000,    USD,    Wire-100,       1000,
+2018-05-02T00:00:00Z,  coinbase,  trade:buy,     0.10,    BTC,    123456,         0.10,
+2018-05-02T00:00:00Z,  coinbase,  trade:buy,     -900,    USD,    123456,         100,
+2018-05-03T00:00:00Z,  coinbase,  fee:exchange,  -9,      USD,    123456,         91,
+2018-05-03T00:00:00Z,  coinbase,  trade:sell,    -0.05,   BTC,    567890,         0.05,
+2018-05-03T00:00:00Z,  coinbase,  trade:sell,    1000,    USD,    567890,         1091,
+2018-05-03T00:00:00Z,  coinbase,  fee:exchange,  -10,     USD,    567890,         1081,
+2018-05-04T00:00:00Z,  coinbase,  withdrawal,    -0.049,  BTC,    abc123,         0.001,   abc123:0
+2018-05-04T00:00:00Z,  coinbase,  fee:network,   -0.001,  BTC,    abc123,         0,
 ```
-
-### Example Double-Entry File
-
-*Note: This is the same set of transactions as in the single-entry example.*
-
-```
-HarmonyCSV v0.1 a2 h5
-Venue, Coinbase
-Exported, 2018-05-01 00:00:00 UTC
-
-Date & Time,              Type,          Amount,      Asset,  Transaction ID
-2018-05-01 00:00:00 UTC,  deposit,       1000,        USD,    Deposit Wire 100
-2018-05-02 00:00:00 UTC,  trade:buy,     10,          BTC,    123456
-2018-05-02 00:00:00 UTC,  trade:buy,     -91190.10,   USD,    123456
-2018-05-03 00:00:00 UTC,  trade:sell,    50,          ETH,    567890
-2018-05-03 00:00:00 UTC,  trade:sell,    33680.50,    USD,    567890
-2018-05-03 00:00:00 UTC,  fee:exchange,  336.805,     USD,    567890
-2018-05-04 00:00:00 UTC,  withdraw,      10,          BTC,    abc123
-2018-05-04 00:00:00 UTC,  fee:network,   0.00016945,  BTC,    abc123
-```
-
-## What's missing
-
-- **Tax Lots, Cost-basis and Disposals** - Institutions track these items as part of profit & loss reporting
-- **Derivatives** - Futures & Options, including margin maintenance fees and leverage
-- **Lending**
-- **Borrowing**
-- **Short & Cover**
-- **Order IDs**
-- **Adjustments**
