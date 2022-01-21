@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/picksco/harmony/master/harmony-logo.png)
+![](https://raw.githubusercontent.com/harmony-csv/harmony/master/harmony-logo.png)
 
 Standardized import / export format for cryptocurrency transaction ledgers.
 
